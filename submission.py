@@ -31,6 +31,8 @@ def expected_credit_gain(env, robot_id):
     else:
         potential_credits = [0]
         for package in env.packages:
+            if not package.on_board:
+                continue
             num_of_moves_to_package_first_robot = calculate_min_moves_to_pickup_package(first_robot, package)
             #num_of_moves_to_package_other_robot = calculate_min_moves_to_pickup_package(other_robot, package)
             #if num_of_moves_to_package_first_robot < num_of_moves_to_package_other_robot:
