@@ -5,7 +5,20 @@ import random
 
 # TODO: section a : 3
 def smart_heuristic(env: WarehouseEnv, robot_id: int):
-    pass
+    first_robot = env.get_robot(robot_id)
+    other_robot = env.get_robot((robot_id + 1) % 2)
+    credit_diff = first_robot.credit - other_robot.credit
+    credit_diff_factor = 100 / env.num_steps
+    expected_credit_gain_factor = 5 / 20
+
+    credit_heuristic = credit_diff * credit_diff_factor
+    expected_credit_heuristic = expected_credit_gain(env, robot_id) * expected_credit_gain_factor
+
+    with open('data.csv', 'a+') as f:
+        f.write(f"{credit_heuristic}, {expected_credit_heuristic}\n")
+
+    return credit_heuristic + expected_credit_heuristic
+
 
 class AgentGreedyImproved(AgentGreedy):
     def heuristic(self, env: WarehouseEnv, robot_id: int):

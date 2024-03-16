@@ -32,9 +32,13 @@ class AgentGreedy(Agent):
     def run_step(self, env: WarehouseEnv, robot_id, time_limit):
         operators = env.get_legal_operators(robot_id)
         children = [env.clone() for _ in operators]
+        children_heuristics = []
         for child, op in zip(children, operators):
+            with open('data.csv', 'a') as f:
+                f.write(f'{op}\n')
             child.apply_operator(robot_id, op)
-        children_heuristics = [self.heuristic(child, robot_id) for child in children]
+            children_heuristics += [self.heuristic(child, robot_id)]
+        # children_heuristics = [self.heuristic(child, robot_id) for child in children]
         max_heuristic = max(children_heuristics)
         index_selected = children_heuristics.index(max_heuristic)
         return operators[index_selected]
