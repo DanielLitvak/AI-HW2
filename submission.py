@@ -3,6 +3,41 @@ from WarehouseEnv import WarehouseEnv, manhattan_distance
 import random
 
 
+def credit_from_package(package):
+    return 2 * manhattan_distance(package.position, package.destination)
+
+
+def moves_to_dropoff_held_package(robot):
+    return manhattan_distance(robot.position, robot.package.destination) + 1
+
+
+def moves_to_package_then_to_dropoff(robot, package):
+    return manhattan_distance(robot.position, package.position) + 1 + manhattan_distance(package.position, package.destination)
+
+
+def calculate_min_moves_to_pickup_package(robot, package):
+    if robot.package:
+        return manhattan_distance(robot.position, robot.package.destination) + 1 + \
+            manhattan_distance(robot.package.destination, package.position)
+    else:
+        return manhattan_distance(robot.position, package.position) + 1
+
+
+def expected_credit_gain(env, robot_id):
+    first_robot = env.get_robot(robot_id)
+    #other_robot = env.get_robot((robot_id + 1) % 2)
+    if first_robot.package is not None:
+        return credit_from_package(first_robot.package) / moves_to_dropoff_held_package(first_robot)
+    else:
+        potential_credits = [0]
+        for package in env.packages:
+            num_of_moves_to_package_first_robot = calculate_min_moves_to_pickup_package(first_robot, package)
+            #num_of_moves_to_package_other_robot = calculate_min_moves_to_pickup_package(other_robot, package)
+            #if num_of_moves_to_package_first_robot < num_of_moves_to_package_other_robot:
+            potential_credits.append(credit_from_package(package) / moves_to_package_then_to_dropoff(first_robot, package))
+        return max(potential_credits)
+
+
 # TODO: section a : 3
 def smart_heuristic(env: WarehouseEnv, robot_id: int):
     first_robot = env.get_robot(robot_id)
