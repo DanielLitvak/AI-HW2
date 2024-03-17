@@ -66,12 +66,15 @@ class AgentGreedyImproved(AgentGreedy):
 
 class AgentMinimax(Agent):
 
-    def rb_minimax(self, env: WarehouseEnv, agent_id, turn, start_time, time_limit):
+    def rb_minimax(self, env: WarehouseEnv, agent_id, turn, start_time, time_limit, d):
         import math
         other_agent = (agent_id+1)%2
         if env.done():
             return (env.get_robot(agent_id).credit - env.get_robot(other_agent).credit) * 2**32
-        if start_time + time_limit > time.time():
+        curr_time = time.time()
+        with open('timings.txt', 'a+') as f:
+            f.write(f"{d}\n")
+        if start_time + time_limit < curr_time:
             return smart_heuristic(env, agent_id)
         operators = env.get_legal_operators(agent_id)
         children = [env.clone() for _ in operators]
@@ -79,24 +82,24 @@ class AgentMinimax(Agent):
             cur_max = -math.inf
             for child, op in zip(children, operators):
                 child.apply_operator(agent_id, op)
-                cur_max = max(cur_max, self.rb_minimax(child, agent_id, (turn+1)%2, start_time, time_limit))
+                cur_max = max(cur_max, self.rb_minimax(child, agent_id, (turn+1)%2, start_time, time_limit, d+1))
             return cur_max
         else:
             cur_min = math.inf
             for child, op in zip(children, operators):
                 child.apply_operator(agent_id, op)
-                cur_min = min(cur_min, self.rb_minimax(child, agent_id, (turn+1)%2, start_time, time_limit))
+                cur_min = min(cur_min, self.rb_minimax(child, agent_id, (turn+1)%2, start_time, time_limit, d+1))
             return cur_min
 
 
     def run_step(self, env: WarehouseEnv, agent_id, time_limit):
-        start = time.time()
         operators = env.get_legal_operators(agent_id)
         children = [env.clone() for _ in operators]
         children_heuristics = []
         for child, op in zip(children, operators):
+            start = time.time()
             child.apply_operator(agent_id, op)
-            children_heuristics += [self.rb_minimax(child, agent_id, ((agent_id+1)%2), start, time_limit)]
+            children_heuristics += [self.rb_minimax(child, agent_id, ((agent_id+1)%2), start, time_limit/len(operators), 0)]
         max_heuristic = max(children_heuristics)
         index_selected = children_heuristics.index(max_heuristic)
         return operators[index_selected]
