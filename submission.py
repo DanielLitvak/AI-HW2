@@ -40,7 +40,6 @@ def expected_credit_gain(env, robot_id):
             package_multiplier = 1 if moves_to_package_then_to_dropoff(first_robot, package) > moves_to_package_then_to_dropoff(other_robot, package) else 0.95
             potential_credits.append(package_multiplier * credit_from_package(package) / moves_to_package_then_to_dropoff(first_robot, package))
         return max(potential_credits)
-a
 
 # TODO: section a : 3
 def smart_heuristic(env: WarehouseEnv, robot_id: int):
