@@ -1,3 +1,5 @@
+import time
+
 from Agent import Agent, AgentGreedy
 from WarehouseEnv import WarehouseEnv, manhattan_distance
 import random
@@ -62,12 +64,42 @@ class AgentGreedyImproved(AgentGreedy):
     def heuristic(self, env: WarehouseEnv, robot_id: int):
         return smart_heuristic(env, robot_id)
 
-
 class AgentMinimax(Agent):
-    # TODO: section b : 1
-    def run_step(self, env: WarehouseEnv, agent_id, time_limit):
-        raise NotImplementedError()
 
+    def rb_minimax(self, env: WarehouseEnv, agent_id, turn, start_time, time_limit):
+        import math
+        other_agent = (agent_id+1)%2
+        if env.done():
+            return (env.get_robot(agent_id).credit - env.get_robot(other_agent).credit) * 2**32
+        if start_time + time_limit > time.time():
+            return smart_heuristic(env, agent_id)
+        operators = env.get_legal_operators(agent_id)
+        children = [env.clone() for _ in operators]
+        if turn == agent_id:
+            cur_max = -math.inf
+            for child, op in zip(children, operators):
+                child.apply_operator(agent_id, op)
+                cur_max = max(cur_max, self.rb_minimax(child, agent_id, (turn+1)%2, start_time, time_limit))
+            return cur_max
+        else:
+            cur_min = math.inf
+            for child, op in zip(children, operators):
+                child.apply_operator(agent_id, op)
+                cur_min = min(cur_min, self.rb_minimax(child, agent_id, (turn+1)%2, start_time, time_limit))
+            return cur_min
+
+
+    def run_step(self, env: WarehouseEnv, agent_id, time_limit):
+        start = time.time()
+        operators = env.get_legal_operators(agent_id)
+        children = [env.clone() for _ in operators]
+        children_heuristics = []
+        for child, op in zip(children, operators):
+            child.apply_operator(agent_id, op)
+            children_heuristics += [self.rb_minimax(child, agent_id, ((agent_id+1)%2), start, time_limit)]
+        max_heuristic = max(children_heuristics)
+        index_selected = children_heuristics.index(max_heuristic)
+        return operators[index_selected]
 
 class AgentAlphaBeta(Agent):
     # TODO: section c : 1
