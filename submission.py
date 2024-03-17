@@ -23,9 +23,13 @@ def calculate_min_moves_to_pickup_package(robot, package):
         return manhattan_distance(robot.position, package.position) + 1
 
 
+def calculate_min_moves_to_charging_station(env, robot):
+    return min(manhattan_distance(robot.position, x.position) for x in env.charge_stations) + 1
+
+
 def expected_credit_gain(env, robot_id):
     first_robot = env.get_robot(robot_id)
-    #other_robot = env.get_robot((robot_id + 1) % 2)
+    other_robot = env.get_robot((robot_id + 1) % 2)
     if first_robot.package is not None:
         return credit_from_package(first_robot.package) / moves_to_dropoff_held_package(first_robot)
     else:
@@ -33,10 +37,8 @@ def expected_credit_gain(env, robot_id):
         for package in env.packages:
             if not package.on_board:
                 continue
-            num_of_moves_to_package_first_robot = calculate_min_moves_to_pickup_package(first_robot, package)
-            #num_of_moves_to_package_other_robot = calculate_min_moves_to_pickup_package(other_robot, package)
-            #if num_of_moves_to_package_first_robot < num_of_moves_to_package_other_robot:
-            potential_credits.append(credit_from_package(package) / moves_to_package_then_to_dropoff(first_robot, package))
+            package_multiplier = 1 if moves_to_package_then_to_dropoff(first_robot, package) > moves_to_package_then_to_dropoff(other_robot, package) else 0.95
+            potential_credits.append(package_multiplier * credit_from_package(package) / moves_to_package_then_to_dropoff(first_robot, package))
         return max(potential_credits)
 
 
