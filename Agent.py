@@ -36,8 +36,6 @@ class AgentGreedy(Agent):
         children = [env.clone() for _ in operators]
         children_heuristics = []
         for child, op in zip(children, operators):
-            with open('data.csv', 'a') as f:
-                f.write(f'{idx} {op}: ')
             child.apply_operator(robot_id, op)
             children_heuristics += [self.heuristic(child, robot_id)]
         # children_heuristics = [self.heuristic(child, robot_id) for child in children]
