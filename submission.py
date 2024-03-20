@@ -123,6 +123,35 @@ class AgentMinimax(Agent):
         return operators[index_selected]
 
 class AgentAlphaBeta(Agent):
+    def rb_alphabeta(self, env: WarehouseEnv, agent_id, turn, d, alpha, beta):
+        other_agent = (agent_id + 1) % 2
+        if env.done():
+            return (env.get_robot(agent_id).credit - env.get_robot(other_agent).credit) * 2 ** 32
+        if d == 0:
+            return smart_heuristic(env, agent_id)
+        if turn == agent_id:
+            operators = env.get_legal_operators(agent_id)
+            children = [env.clone() for _ in operators]
+            cur_max = -math.inf
+            for child, op in zip(children, operators):
+                child.apply_operator(agent_id, op)
+                cur_max = max(cur_max, self.rb_alphabeta(child, agent_id, (turn + 1) % 2, d - 1, alpha, beta))
+                alpha = max(alpha, cur_max)
+                if cur_max >= beta:
+                    return math.inf
+            return cur_max
+        else:
+            operators = env.get_legal_operators(other_agent)
+            children = [env.clone() for _ in operators]
+            cur_min = math.inf
+            for child, op in zip(children, operators):
+                child.apply_operator(other_agent, op)
+                cur_min = min(cur_min, self.rb_alphabeta(child, agent_id, (turn + 1) % 2, d - 1, alpha, beta))
+                beta = min(cur_min, beta)
+                if cur_min <= alpha:
+                    return -math.inf
+            return cur_min
+
     # TODO: section c : 1
     def run_step(self, env: WarehouseEnv, agent_id, time_limit):
         operators = env.get_legal_operators(agent_id)
