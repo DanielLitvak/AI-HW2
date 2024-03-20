@@ -61,7 +61,7 @@ def autistic_heuristic(env: WarehouseEnv, robot_id: int):
     first_robot = env.get_robot(robot_id)
     other_robot = env.get_robot((robot_id + 1) % 2)
     credit_diff = first_robot.credit - other_robot.credit
-    credit_diff_factor = 100 / env.num_steps
+    credit_diff_factor = 100 / (min(env.num_steps, first_robot.battery + other_robot.battery) + 1)
     expected_credit_gain_factor = 5 / 20
     enemy = (robot_id+1)%2
 
