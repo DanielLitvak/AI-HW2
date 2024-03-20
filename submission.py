@@ -1,5 +1,5 @@
 import time
-import functools
+import math
 
 from Agent import Agent, AgentGreedy
 from WarehouseEnv import WarehouseEnv, manhattan_distance
@@ -80,7 +80,6 @@ class AgentGreedyImproved(AgentGreedy):
 class AgentMinimax(Agent):
 
     def rb_minimax(self, env: WarehouseEnv, agent_id, turn, d):
-        import math
         other_agent = (agent_id+1)%2
         if env.done():
             return (env.get_robot(agent_id).credit - env.get_robot(other_agent).credit) * 2**32
@@ -126,7 +125,25 @@ class AgentMinimax(Agent):
 class AgentAlphaBeta(Agent):
     # TODO: section c : 1
     def run_step(self, env: WarehouseEnv, agent_id, time_limit):
-        raise NotImplementedError()
+        operators = env.get_legal_operators(agent_id)
+        children_heuristics = []
+        total_operators = 7
+        depth_to_scan = 0
+        remaining_time = time_limit
+        while (time_limit - remaining_time) < (time_limit / total_operators):
+            start = time.time()
+            children_heuristics = []
+            children = [env.clone() for _ in operators]
+            for child, op in zip(children, operators):
+                child.apply_operator(agent_id, op)
+                children_heuristics += [self.rb_alphabeta(child, agent_id, ((agent_id+1)%2), depth_to_scan, alpha=-math.inf, beta=math.inf)]
+            depth_to_scan += 1
+            remaining_time = remaining_time - (time.time() - start)
+        print(depth_to_scan)
+        max_heuristic = max(children_heuristics)
+        index_selected = children_heuristics.index(max_heuristic)
+        #print(remaining_time)
+        return operators[index_selected]
 
 
 class AgentExpectimax(Agent):
