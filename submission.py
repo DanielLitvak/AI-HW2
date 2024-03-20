@@ -49,7 +49,7 @@ def smart_heuristic(env: WarehouseEnv, robot_id: int):
     first_robot = env.get_robot(robot_id)
     other_robot = env.get_robot((robot_id + 1) % 2)
     credit_diff = first_robot.credit - other_robot.credit
-    credit_diff_factor = 100 / env.num_steps
+    credit_diff_factor = 100 / (env.num_steps+1)
     expected_credit_gain_factor = 5 / 20
 
     credit_heuristic = credit_diff * credit_diff_factor
@@ -106,21 +106,22 @@ class AgentMinimax(Agent):
     def run_step(self, env: WarehouseEnv, agent_id, time_limit):
         operators = env.get_legal_operators(agent_id)
         children_heuristics = []
-        remaining_time = time_limit
+        total_operators = 7
         depth_to_scan = 0
-        start = time.time()
-        eps = 2
-        for depth_to_scan in range(7):
+        remaining_time = time_limit
+        while (time_limit - remaining_time) < (time_limit / total_operators):
+            start = time.time()
             children_heuristics = []
             children = [env.clone() for _ in operators]
             for child, op in zip(children, operators):
                 child.apply_operator(agent_id, op)
                 children_heuristics += [self.rb_minimax(child, agent_id, ((agent_id+1)%2), depth_to_scan)]
+            depth_to_scan += 1
+            remaining_time = remaining_time - (time.time() - start)
         max_heuristic = max(children_heuristics)
         index_selected = children_heuristics.index(max_heuristic)
-        print(f"total time for run_step: {time.time() - start}")
+        #print(remaining_time)
         return operators[index_selected]
-
 
 class AgentAlphaBeta(Agent):
     # TODO: section c : 1
