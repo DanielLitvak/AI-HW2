@@ -176,9 +176,56 @@ class AgentAlphaBeta(Agent):
 
 
 class AgentExpectimax(Agent):
-    # TODO: section d : 1
+
+    STEPS_WITH_DOUBLE_PROBABILITY = ['move east', 'pick up']
+
+    def rb_expectimax(self, env: WarehouseEnv, agent_id, turn, d):
+        other_agent = (agent_id+1)%2
+        if env.done():
+            return (env.get_robot(agent_id).credit - env.get_robot(other_agent).credit) * 2**32
+        if d == 0:
+            return smart_heuristic(env, agent_id)
+
+        if turn == agent_id:
+            operators = env.get_legal_operators(agent_id)
+            children = [env.clone() for _ in operators]
+            cur_max = -math.inf
+            for child, op in zip(children, operators):
+                child.apply_operator(agent_id, op)
+                cur_max = max(cur_max, self.rb_expectimax(child, agent_id, (turn+1)%2, d-1))
+            return cur_max
+        else:
+            operators = env.get_legal_operators(other_agent)
+            denominator = len(operators) + len([x for x in self.STEPS_WITH_DOUBLE_PROBABILITY if x in operators])
+            operator_probabilities = {}
+            for op in operators:
+                operator_probabilities[op] = (1 + (1 if op in self.STEPS_WITH_DOUBLE_PROBABILITY else 0)) / denominator
+            children = [env.clone() for _ in operators]
+            res = 0
+            for child, op in zip(children, operators):
+                child.apply_operator(other_agent, op)
+                res += (operator_probabilities[op] * self.rb_expectimax(child, agent_id, (turn+1)%2, d-1))
+            return res
+
     def run_step(self, env: WarehouseEnv, agent_id, time_limit):
-        raise NotImplementedError()
+        operators = env.get_legal_operators(agent_id)
+        children_heuristics = []
+        total_operators = 7
+        depth_to_scan = 0
+        remaining_time = time_limit
+        while (time_limit - remaining_time) < (time_limit / total_operators):
+            start = time.time()
+            children_heuristics = []
+            children = [env.clone() for _ in operators]
+            for child, op in zip(children, operators):
+                child.apply_operator(agent_id, op)
+                children_heuristics += [self.rb_expectimax(child, agent_id, ((agent_id+1)%2), depth_to_scan)]
+            depth_to_scan += 1
+            remaining_time = remaining_time - (time.time() - start)
+        max_heuristic = max(children_heuristics)
+        index_selected = children_heuristics.index(max_heuristic)
+        #print(remaining_time)
+        return operators[index_selected]
 
 
 # here you can check specific paths to get to know the environment
